@@ -23,6 +23,7 @@ pub struct Config{
     pub scheduler_num: u16,
     pub heap_min_size: usize,
     pub stack_max_size: usize,
+    pub cycles: usize,
 }
 
 // The data that will be share between multiple schedulers.
@@ -44,7 +45,8 @@ impl SharedState{
             config: Arc::new(Config {
                 scheduler_num,
                 heap_min_size,
-                stack_max_size
+                stack_max_size,
+                cycles: 200
             }),
             code: Arc::new(Code::new()),
             current_id: AtomicUsize::new(0),

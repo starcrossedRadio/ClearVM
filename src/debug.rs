@@ -26,7 +26,7 @@ macro_rules! debug_ok {
 macro_rules! debug_ok {
     ($($arg:tt)*) => {}
 }
-/*
+
 macro_rules! debug_fail {
     ($($arg:tt)*) => { println!("[1m[31m[-][0m[31m {}[0m",format!($($arg)*)) }
 }
@@ -36,7 +36,7 @@ macro_rules! debug_fail {
     ($($arg:tt)*) => {}
 }
 
-
+/*
 #[cfg(not(instruction))]
 macro_rules! debug_instruction {
     ($($arg:tt)*) => {}

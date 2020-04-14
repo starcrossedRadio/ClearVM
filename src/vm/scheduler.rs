@@ -21,38 +21,55 @@ impl Scheduler{
         }
     }
 
-    fn execute_process(&self,mut process: Process) {
-        for _ in 0..200 {
+    fn execute_process(&self,process: &mut Process) {
+        for _ in 0..self.state.config.cycles {
             process.execute_instruction();
         }
     }
 
     fn block(&self) {
         self.state.sleeping_counter.fetch_add(1, Ordering::SeqCst);
+        debug_warn!("Thread {} Slept n:{}",self.id,self.state.sleeping_counter.load(Ordering::SeqCst));
+        if self.state.sleeping_counter.load(Ordering::SeqCst) == self.state.config.scheduler_num as usize {
+            std::process::exit(0);
+        }
         let (ref mutex, ref condition_variable) = self.state.thread_wait;
         let mut started = mutex.lock().unwrap();
         *started = false;
-        debug_warn!("Thread {} Slept n:{}",self.id,self.state.sleeping_counter.load(Ordering::SeqCst));
         while !*started {
             started = condition_variable.wait(started).unwrap();
         }
         self.state.sleeping_counter.fetch_sub(1, Ordering::SeqCst);
         debug_ok!("Thread {} woke up",self.id);
-        //println!("{}",self.state.sleeping_counter.load(Ordering::SeqCst));
     }
     
     fn steal(&self) {
         if let Steal::Success(_) = self.state.injector.steal_batch(&self.processes) {
-            
+            debug_ok!("Thread {} stole from injector",self.id);
         }else{
-            self.block();
+            let stealers = self.state.stealers.read().unwrap();
+            for stealer in stealers.iter() {
+                if let Steal::Success(_) = stealer.steal_batch(&self.processes) {
+                    debug_ok!("Thread {} stole from another thread!",self.id);
+                    break;
+                }
+            }
+            if self.processes.is_empty() {
+                drop(stealers);
+                self.block();
+            }
         }
     }
 
     pub fn run(&self) {
         loop {
-            while let Some(process) = self.processes.pop() {
-                self.execute_process(process);
+            while let Some(mut process) = self.processes.pop() {
+                self.execute_process(&mut process);
+                if !process.halted {
+                    self.processes.push(process);
+                }else{
+                    debug_fail!("Process {} halted in Scheduler {}!",process.id,self.id);
+                }
             }    
             if self.processes.is_empty() {
                 self.steal();

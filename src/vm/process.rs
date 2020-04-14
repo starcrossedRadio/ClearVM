@@ -18,10 +18,11 @@ pub struct Process{
     module: Arc<Module>,
     pub halted: bool,
     pub blocked: bool,
+    pub id: usize
 }
 
 impl Process{
-    pub fn new(config: Arc<Config>,module: Arc<Module>) -> Process{
+    pub fn new(config: Arc<Config>,module: Arc<Module>,id: usize) -> Process{
         Process {
             memory: vec![0;config.heap_min_size + config.stack_max_size],
             registers: [0;16],
@@ -30,11 +31,11 @@ impl Process{
             sf: Vec::new(),
             blocked: false,
             halted: false,
-
+            id
         }
     }
 
     pub fn execute_instruction(&mut self) {
-
+        self.halted = true;
     }
 }
