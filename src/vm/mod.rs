@@ -36,4 +36,8 @@ impl VM{
             sleeping_counter: AtomicUsize::new(0)
         }
     }
+
+    pub fn start(&self){
+
+    }
 }
