@@ -1,32 +1,45 @@
-use std::sync::{Arc,RwLock};
-use std::sync::atomic::{AtomicUsize};
 use chashmap::CHashMap;
+use std::sync::Arc;
+use std::collections::HashMap;
 
-#[derive(Debug)]
-pub struct Module{
-    pub current: Arc<RwLock<Arc<Vec<u8>>>>
+#[derive(Debug,PartialEq)]
+pub struct Module {
+    pub code: Vec<u8>,
+    pub jump_table: HashMap<u32,usize>,
+    pub start_ip: usize
+}
+
+impl Module{
+    pub fn new(code: Vec<u8>,jump_table: HashMap<u32,usize>,start_ip: usize) -> Module {
+        Module {
+            code,
+            jump_table,
+            start_ip
+        }
+    }
 }
 
 #[derive(Debug)]
-pub struct Code{
-    pub modules: CHashMap<u32,Module>
+pub struct Code {
+    pub modules: CHashMap<u32, Arc<Module>>,
 }
 
-impl Code{
-
+impl Code {
     pub fn new() -> Code {
         Code {
-            modules: CHashMap::new()
+            modules: CHashMap::new(),
         }
     }
 
-    pub fn set(&self,hash: u32,code: Vec<u8>) {
-        self.modules.insert(hash,Module { current: Arc::new(RwLock::new(Arc::new(code)))});
+    pub fn set(&self, hash: u32, module: Module) {
+        self.modules.insert(
+            hash,
+            Arc::new(module),
+        );
     }
 
-    pub fn get(&self,hash: u32) -> Arc<Vec<u8>> {//-> Arc<Vec<u8>> {
+    pub fn get(&self, hash: u32) -> Arc<Module> {
         let module = self.modules.get(&hash).unwrap();
-        let readable = (*module).current.read().unwrap();
-        readable.clone()
+        (*module).clone()
     }
 }
