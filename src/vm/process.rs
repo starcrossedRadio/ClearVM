@@ -34,7 +34,7 @@ impl Process{
         }
     }
 
-    pub fn execute_instruction() {
+    pub fn execute_instruction(&mut self) {
 
     }
 }

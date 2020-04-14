@@ -6,7 +6,7 @@ Acronym for "Chiyoku likes Erlang and Rust Virtual Machine". ClearVM is a virtua
 
 - Asynchronous communication
 - Error Handling with Result
-- Hot Code Realoading
+- Hot Code Reloading
 - No Garbage Collector
 
 # How To Use
