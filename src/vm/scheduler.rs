@@ -21,11 +21,6 @@ impl Scheduler{
         }
     }
 
-    fn execute_process(&self,process: &mut Process) {
-        for _ in 0..self.state.config.cycles {
-            process.execute_instruction();
-        }
-    }
 
     fn block(&self) {
         self.state.sleeping_counter.fetch_add(1, Ordering::SeqCst);
@@ -64,11 +59,15 @@ impl Scheduler{
     pub fn run(&self) {
         loop {
             while let Some(mut process) = self.processes.pop() {
-                self.execute_process(&mut process);
+                for _ in 0..self.state.config.cycles {
+                    process.execute_instruction();
+                    if process.halted {
+                        debug_fail!("Process {} halted in Scheduler {}!",process.id,self.id);
+                        break;
+                    }
+                }
                 if !process.halted {
                     self.processes.push(process);
-                }else{
-                    debug_fail!("Process {} halted in Scheduler {}!",process.id,self.id);
                 }
             }    
             if self.processes.is_empty() {

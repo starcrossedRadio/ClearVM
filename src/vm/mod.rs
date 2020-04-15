@@ -1,17 +1,18 @@
 pub mod code;
 pub mod process;
 pub mod scheduler;
+pub mod state;
 pub use code::Module;
 pub use code::Code;
 pub use process::Process;
+pub use state::SharedState;
+pub mod opcodes;
+pub use opcodes::OpCode;
 
-use std::sync::atomic::AtomicUsize;
-use std::sync::{Arc, Condvar, Mutex, RwLock};
-use crossbeam::deque::{Injector,Worker,Stealer};
-use chashmap::CHashMap;
+use std::sync::Arc;
+use crossbeam::deque::Worker;
 use scheduler::Scheduler;
 use std::thread;
-use std::collections::VecDeque;
 
 
 pub struct Message{
@@ -26,39 +27,6 @@ pub struct Config{
     pub cycles: usize,
 }
 
-// The data that will be share between multiple schedulers.
-pub struct SharedState{
-    pub code: Arc<Code>,
-    pub config: Arc<Config>,
-    pub current_id: AtomicUsize,
-    pub stealers: RwLock<Vec<Stealer<Process>>>,
-    pub thread_wait: (Mutex<bool>, Condvar),
-    pub message_buffer: CHashMap<usize,VecDeque<Message>>,
-    pub waiting: CHashMap<usize,Process>,
-    pub injector: Injector<Process>,
-    sleeping_counter: AtomicUsize
-}
-
-impl SharedState{
-    pub fn new(scheduler_num: u16,heap_min_size: usize,stack_max_size: usize) -> SharedState{
-        SharedState {
-            config: Arc::new(Config {
-                scheduler_num,
-                heap_min_size,
-                stack_max_size,
-                cycles: 200
-            }),
-            code: Arc::new(Code::new()),
-            current_id: AtomicUsize::new(0),
-            stealers: RwLock::new(Vec::new()),
-            thread_wait: (Mutex::new(false), Condvar::new()),   
-            message_buffer: CHashMap::new(),
-            waiting: CHashMap::new(),
-            injector: Injector::new(),
-            sleeping_counter: AtomicUsize::new(0)
-        }
-    }
-}
 
 // Module for holding some global properties between schedulers
 pub struct VM {
@@ -79,13 +47,11 @@ impl VM{
     }
 
     pub fn start(&mut self){
-        for i in 0..(self.state.config.scheduler_num-1){
+        for i in 0..self.state.config.scheduler_num{
             let scheduler = self.create_scheduler(i as usize);
             thread::spawn(move | | {
                 scheduler.run();
             });
         }
-        let scheduler = self.create_scheduler((self.state.config.scheduler_num-1) as usize);
-        scheduler.run();
     }
 }

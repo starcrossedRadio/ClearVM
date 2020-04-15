@@ -1,6 +1,8 @@
 use crate::vm::Module;
 use crate::vm::Config;
+use crate::vm::OpCode;
 use std::sync::Arc;
+use std::convert::TryInto;
 
 #[derive(Debug)]
 struct StackFrame{
@@ -35,7 +37,28 @@ impl Process{
         }
     }
 
+    pub fn get_next_byte(&mut self) -> u8{
+        if self.module.code.len() < self.ip+1 { vm_panic!("Invalid Operand!"); }
+        if self.module.code[self.ip] >= 16 { vm_panic!("Invalid Register!"); }
+        self.ip += 1;
+        self.module.code[self.ip-1]
+    }
+
+    pub fn get_4_bytes(&mut self) -> u32{
+        if self.module.code.len() < self.ip+4 { vm_panic!("Invalid Operand!"); }
+        self.ip += 4;
+        let (int_bytes, _) = self.module.code[self.ip-4..self.ip].split_at(std::mem::size_of::<u32>());
+        u32::from_le_bytes(int_bytes.try_into().unwrap())
+    }
+
     pub fn execute_instruction(&mut self) {
-        self.halted = true;
+        match OpCode::from(self.get_next_byte()) {
+            OpCode::Halt => {
+                self.halted = true;
+            }
+            _ => {
+                unimplemented!();
+            }
+        }
     }
 }
