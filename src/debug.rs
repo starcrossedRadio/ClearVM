@@ -31,6 +31,10 @@ macro_rules! debug_fail {
     ($($arg:tt)*) => { println!("[1m[31m[-][0m[31m {}[0m",format!($($arg)*)) }
 }
 
+macro_rules! vm_panic {
+    ($($arg:tt)*) => { println!("Panicked! {}",format!($($arg)*)); std::process::exit(1); }
+}
+
 #[cfg(not(debug_assertions))]
 macro_rules! debug_fail {
     ($($arg:tt)*) => {}
@@ -55,7 +59,7 @@ macro_rules! debug_reg {
 }
 
 macro_rules! debug_title {
-    ($($arg:tt)*) => { println!("\n[34m───── {} ─────[0m\n",format!($($arg)*)) }
+    ($($arg:tt)*) => { println!("\x1b[34m───── {} ─────[0m\x1b",format!($($arg)*)) }
 }
 
 #[cfg(not(debug_assertions))]
